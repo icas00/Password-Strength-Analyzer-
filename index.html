@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=5.0">
+    <title>Password Strength Analyzer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(120deg, #f8f9f9, #a18ee5);
+            color: #080808;
+            overflow: hidden;
+        }
+
+        .container {
+        background: linear-gradient(135deg, #e0e0e0, #ffffff);
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        width: 350px;
+        text-align: center;
+        animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+        }
+        @media (max-width: 768px) {
+        .container {
+            width: 90%;
+            padding: 20px;
+        }
+        }
+        .progress-bar {
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-bar-inner {
+        height: 100%;
+        width: 0;
+        transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+        border-radius: 5px;
+        }
+
+
+        .weak { background: linear-gradient(to right, red, #ff6f61); }
+        .medium { background: linear-gradient(to right, orange, yellow); }
+        .strong { background: linear-gradient(to right, green, #6aff8f); }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Password Strength Analyzer</h2>
+        <input type="password" id="password" placeholder="Enter your password" style="width: 95%; padding: 9px;">
+        <div class="progress-bar" style="margin-top: 10px;">
+            <div class="progress-bar-inner"></div>
+        </div>
+        <p id="feedback" style="font-size: 14px; margin-top: 10px; color: #333;"></p>
+    </div>
+    <script>
+        const passwordInput = document.getElementById('password');
+        const progressBarInner = document.querySelector('.progress-bar-inner');
+        const feedback = document.getElementById('feedback');
+
+        passwordInput.addEventListener('input', async () => {
+            const password = passwordInput.value;
+
+            if (!password) {
+                progressBarInner.style.width = '0';
+                feedback.textContent = '';
+                return;
+            }
+
+            const response = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password }),
+            });
+
+            const result = await response.json();
+
+            if (result.error) {
+                feedback.textContent = result.error;
+                return;
+            }
+
+            const { score, suggestions, breached } = result;
+            progressBarInner.style.width = `${score}%`;
+
+            if (score <= 40) {
+                progressBarInner.className = 'progress-bar-inner weak';
+            } else if (score <= 80) {
+                progressBarInner.className = 'progress-bar-inner medium';
+            } else {
+                progressBarInner.className = 'progress-bar-inner strong';
+            }
+
+            feedback.textContent = `${breached ? 'Your password was found in a data breach. ' : ''}${suggestions.join(' ')}`;
+        });
+    </script>
+</body>
+</html>
